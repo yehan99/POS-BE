@@ -1,0 +1,219 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Permission;
+use App\Models\Role;
+use App\Models\Tenant;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+
+class AuthSeeder extends Seeder
+{
+    /**
+     * Seed roles, permissions, and a default super admin user.
+     */
+    public function run(): void
+    {
+        DB::transaction(function () {
+            $permissions = $this->seedPermissions();
+            $roles = $this->seedRoles($permissions);
+            $this->seedSuperAdmin($roles['super_admin']);
+        });
+    }
+
+    /**
+     * Seed permission catalog based on the frontend enum definition.
+     *
+     * @return array<string, Permission>
+     */
+    private function seedPermissions(): array
+    {
+        $catalog = [
+            // Product management
+            ['slug' => 'product.create', 'name' => 'Create Products', 'module' => 'products'],
+            ['slug' => 'product.read', 'name' => 'View Products', 'module' => 'products'],
+            ['slug' => 'product.update', 'name' => 'Update Products', 'module' => 'products'],
+            ['slug' => 'product.delete', 'name' => 'Delete Products', 'module' => 'products'],
+
+            // Sales
+            ['slug' => 'sale.create', 'name' => 'Create Sales', 'module' => 'sales'],
+            ['slug' => 'sale.read', 'name' => 'View Sales', 'module' => 'sales'],
+            ['slug' => 'sale.refund', 'name' => 'Process Refunds', 'module' => 'sales'],
+            ['slug' => 'sale.void', 'name' => 'Void Sales', 'module' => 'sales'],
+
+            // Inventory
+            ['slug' => 'inventory.create', 'name' => 'Create Inventory Records', 'module' => 'inventory'],
+            ['slug' => 'inventory.read', 'name' => 'View Inventory', 'module' => 'inventory'],
+            ['slug' => 'inventory.update', 'name' => 'Update Inventory', 'module' => 'inventory'],
+            ['slug' => 'inventory.adjust', 'name' => 'Adjust Inventory', 'module' => 'inventory'],
+
+            // Customers
+            ['slug' => 'customer.create', 'name' => 'Create Customers', 'module' => 'customers'],
+            ['slug' => 'customer.read', 'name' => 'View Customers', 'module' => 'customers'],
+            ['slug' => 'customer.update', 'name' => 'Update Customers', 'module' => 'customers'],
+            ['slug' => 'customer.delete', 'name' => 'Delete Customers', 'module' => 'customers'],
+
+            // Reports
+            ['slug' => 'report.sales', 'name' => 'Access Sales Reports', 'module' => 'reports'],
+            ['slug' => 'report.inventory', 'name' => 'Access Inventory Reports', 'module' => 'reports'],
+            ['slug' => 'report.customers', 'name' => 'Access Customer Reports', 'module' => 'reports'],
+            ['slug' => 'report.financial', 'name' => 'Access Financial Reports', 'module' => 'reports'],
+
+            // Settings
+            ['slug' => 'settings.read', 'name' => 'View Settings', 'module' => 'settings'],
+            ['slug' => 'settings.update', 'name' => 'Update Settings', 'module' => 'settings'],
+            ['slug' => 'user.management', 'name' => 'Manage Users', 'module' => 'settings'],
+        ];
+
+        $records = [];
+
+        foreach ($catalog as $permission) {
+            $records[$permission['slug']] = Permission::query()->updateOrCreate(
+                ['slug' => $permission['slug']],
+                [
+                    'name' => $permission['name'],
+                    'module' => $permission['module'],
+                    'description' => Arr::get($permission, 'description'),
+                ]
+            );
+        }
+
+        return $records;
+    }
+
+    /**
+     * Seed the base roles and attach relevant permissions.
+     *
+     * @param array<string, Permission> $permissions
+     * @return array<string, Role>
+     */
+    private function seedRoles(array $permissions): array
+    {
+        $roleMatrix = [
+            'super_admin' => [
+                'name' => 'Super Admin',
+                'description' => 'Full system access with tenant ownership rights.',
+                'is_default' => false,
+                'permissions' => array_keys($permissions),
+            ],
+            'admin' => [
+                'name' => 'Admin',
+                'description' => 'Manage business configuration and daily operations.',
+                'is_default' => true,
+                'permissions' => [
+                    'product.create', 'product.read', 'product.update', 'product.delete',
+                    'sale.create', 'sale.read', 'sale.refund', 'sale.void',
+                    'inventory.create', 'inventory.read', 'inventory.update', 'inventory.adjust',
+                    'customer.create', 'customer.read', 'customer.update', 'customer.delete',
+                    'report.sales', 'report.inventory', 'report.customers', 'report.financial',
+                    'settings.read', 'settings.update', 'user.management',
+                ],
+            ],
+            'manager' => [
+                'name' => 'Manager',
+                'description' => 'Oversee frontline operations and approve adjustments.',
+                'is_default' => false,
+                'permissions' => [
+                    'product.create', 'product.read', 'product.update',
+                    'sale.create', 'sale.read', 'sale.refund',
+                    'inventory.create', 'inventory.read', 'inventory.update', 'inventory.adjust',
+                    'customer.create', 'customer.read', 'customer.update',
+                    'report.sales', 'report.inventory', 'report.customers',
+                    'settings.read',
+                ],
+            ],
+            'cashier' => [
+                'name' => 'Cashier',
+                'description' => 'Perform point-of-sale operations and assist customers.',
+                'is_default' => false,
+                'permissions' => [
+                    'sale.create', 'sale.read',
+                    'customer.create', 'customer.read',
+                    'report.sales',
+                ],
+            ],
+            'viewer' => [
+                'name' => 'Viewer',
+                'description' => 'Read-only access to analytics and catalog data.',
+                'is_default' => false,
+                'permissions' => [
+                    'product.read',
+                    'sale.read',
+                    'inventory.read',
+                    'customer.read',
+                    'report.sales', 'report.inventory', 'report.customers',
+                ],
+            ],
+        ];
+
+        $roles = [];
+
+        foreach ($roleMatrix as $slug => $definition) {
+            $role = Role::query()->updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'name' => $definition['name'],
+                    'description' => $definition['description'],
+                    'is_default' => $definition['is_default'],
+                ]
+            );
+
+            $permissionIds = collect($definition['permissions'])
+                ->map(fn (string $slug) => $permissions[$slug]->id)
+                ->all();
+
+            $role->permissions()->sync($permissionIds);
+            $roles[$slug] = $role;
+        }
+
+        return $roles;
+    }
+
+    /**
+     * Seed a default tenant and super admin user account.
+     */
+    private function seedSuperAdmin(Role $superAdminRole): void
+    {
+        $tenant = Tenant::query()->firstOrCreate(
+            ['name' => 'Paradise POS HQ'],
+            [
+                'business_type' => 'retail',
+                'country' => 'LK',
+                'phone' => '+94 11 234 5678',
+                'settings' => [
+                    'currency' => 'LKR',
+                    'timezone' => 'Asia/Colombo',
+                    'language' => 'en',
+                    'tax_settings' => [
+                        'defaultTaxRate' => 15,
+                        'taxInclusive' => true,
+                    ],
+                ],
+            ]
+        );
+
+        User::query()->updateOrCreate(
+            ['email' => 'founder@paradisepos.com'],
+            [
+                'tenant_id' => $tenant->id,
+                'role_id' => $superAdminRole->id,
+                'first_name' => 'System',
+                'last_name' => 'Owner',
+                'phone' => '+94 77 123 4567',
+                'password' => Hash::make('Password@123'),
+                'is_active' => true,
+                'email_verified_at' => now(),
+                'metadata' => [
+                    'provisioned_by' => 'seeder',
+                    'notes' => 'Initial super admin user created by AuthSeeder',
+                ],
+                'remember_token' => Str::random(20),
+            ]
+        );
+    }
+}
