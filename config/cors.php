@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['api/*'],
 
     'allowed_methods' => ['*'],
 
@@ -27,7 +27,6 @@ return [
     //     'https://127.0.0.1:4200',
     // ],
 
-    'allowed_origins_patterns' => [],
 
     'allowed_headers' => ['*'],
 
@@ -35,6 +34,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => true,
+    'supports_credentials' => false,
 
 ];
