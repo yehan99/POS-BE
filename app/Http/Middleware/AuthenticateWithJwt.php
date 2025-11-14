@@ -81,9 +81,9 @@ class AuthenticateWithJwt
         try {
             $decoded = (array) JWT::decode($token, new Key($secret, $algo));
         } catch (ExpiredException $exception) {
-            throw new AuthenticationException('Token has expired.', previous: $exception);
+            throw new AuthenticationException('Token has expired.');
         } catch (Throwable $exception) {
-            throw new AuthenticationException('Token is invalid.', previous: $exception);
+            throw new AuthenticationException('Token is invalid.');
         }
 
         return $decoded;

@@ -13,6 +13,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -80,6 +81,48 @@ class UserController extends Controller
             ->additional([
                 'meta' => $this->buildPaginationMeta($users),
             ])->response();
+    }
+
+    public function updateStatus(Request $request, User $user): JsonResponse
+    {
+        $this->ensureCanManageUsers($request);
+        $this->assertSameTenant($request, $user);
+
+        $validated = $request->validate([
+            'isActive' => ['sometimes', 'boolean'],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
+        $isActive = Arr::get($validated, 'is_active', Arr::get($validated, 'isActive'));
+
+        if ($isActive === null) {
+            throw ValidationException::withMessages([
+                'isActive' => ['The isActive value is required.'],
+            ]);
+        }
+
+        $user->is_active = (bool) $isActive;
+        $user->save();
+
+        $user->refresh()->load('role.permissions', 'permissions', 'tenant', 'site');
+
+        return (new UserResource($user))->response();
+    }
+
+    public function destroy(Request $request, User $user): Response
+    {
+        $this->ensureCanManageUsers($request);
+        $this->assertSameTenant($request, $user);
+
+        if ($user->is($request->user())) {
+            throw ValidationException::withMessages([
+                'user' => ['You cannot archive your own account.'],
+            ]);
+        }
+
+        $user->delete();
+
+        return response()->noContent();
     }
 
     public function store(StoreUserRequest $request): JsonResponse

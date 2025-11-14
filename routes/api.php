@@ -17,6 +17,7 @@ Route::prefix('auth')->name('auth.')->group(function () {
 
 Route::middleware('auth.jwt')->group(function () {
     Route::get('users/options', [UserController::class, 'options'])->name('users.options');
+    Route::patch('users/{user}/status', [UserController::class, 'updateStatus'])->name('users.status');
     Route::apiResource('users', UserController::class)
-        ->only(['index', 'store', 'show', 'update']);
+        ->only(['index', 'store', 'show', 'update', 'destroy']);
 });
