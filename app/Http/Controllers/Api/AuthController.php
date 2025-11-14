@@ -5,107 +5,62 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RefreshTokenRequest;
-use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\AuthToken;
-use App\Models\Role;
-use App\Models\Tenant;
 use App\Models\User;
 use App\Services\AuthTokenService;
+use App\Services\GoogleIdTokenVerifier;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly AuthTokenService $tokens)
-    {
-    }
-
-    public function register(RegisterRequest $request): JsonResponse
-    {
-        $data = $request->validated();
-
-        $user = DB::transaction(function () use ($data) {
-            $tenantData = Arr::get($data, 'tenant', []);
-
-            $tenant = Tenant::query()->create([
-                'name' => Arr::get($tenantData, 'name'),
-                'business_type' => Arr::get($tenantData, 'business_type', 'retail'),
-                'country' => Arr::get($tenantData, 'country', 'LK'),
-                'phone' => Arr::get($tenantData, 'phone'),
-                'settings' => Arr::get($tenantData, 'settings', [
-                    'currency' => 'LKR',
-                    'timezone' => 'Asia/Colombo',
-                    'language' => 'en',
-                ]),
-                'is_active' => true,
-            ]);
-
-            $roleSlug = Arr::get($data, 'role_slug', 'admin');
-
-            $role = Role::query()->where('slug', $roleSlug)->first();
-
-            if (! $role) {
-                throw ValidationException::withMessages([
-                    'role_slug' => ["Role '{$roleSlug}' is not available."],
-                ]);
-            }
-
-            $user = User::query()->create([
-                'tenant_id' => $tenant->id,
-                'role_id' => $role->id,
-                'first_name' => Arr::get($data, 'first_name'),
-                'last_name' => Arr::get($data, 'last_name'),
-                'email' => Arr::get($data, 'email'),
-                'phone' => Arr::get($data, 'phone'),
-                'password' => Hash::make(Arr::get($data, 'password')),
-                'is_active' => true,
-                'metadata' => [
-                    'registered_via' => 'api',
-                ],
-            ]);
-
-            return $user;
-        });
-
-        $user->loadMissing('role.permissions', 'permissions', 'tenant');
-
-        $tokenBundle = $this->tokens->issue($user, [
-            'device_name' => $data['device_name'] ?? 'web',
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
-
-        return $this->tokenResponse($user, $tokenBundle, 201);
+    public function __construct(
+        private readonly AuthTokenService $tokens,
+        private readonly GoogleIdTokenVerifier $googleVerifier,
+    ) {
     }
 
     public function login(LoginRequest $request): JsonResponse
     {
         $data = $request->validated();
 
+        $googlePayload = $this->googleVerifier->verify($data['id_token']);
+
+        $email = strtolower($googlePayload['email'] ?? '');
+
+        if (! $email) {
+            throw ValidationException::withMessages([
+                'id_token' => ['The Google token does not include an email address.'],
+            ]);
+        }
+
         $user = User::query()
-            ->with('role.permissions', 'permissions', 'tenant')
-            ->where('email', $data['email'])
+            ->with('role.permissions', 'permissions', 'tenant', 'site')
+            ->whereRaw('LOWER(email) = ?', [$email])
             ->first();
 
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
+        if (! $user) {
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials are invalid.'],
+                'id_token' => ['This account is not provisioned in the system.'],
             ]);
         }
 
         if (! $user->is_active) {
             throw ValidationException::withMessages([
-                'email' => ['Account is currently inactive.'],
+                'id_token' => ['Account is currently inactive.'],
             ]);
         }
 
-        $user->forceFill(['last_login_at' => now()])->save();
+        $updates = ['last_login_at' => now()];
+
+        if (! $user->email_verified_at) {
+            $updates['email_verified_at'] = now();
+        }
+
+        $user->forceFill($updates)->save();
 
         $tokenBundle = $this->tokens->issue($user, [
             'device_name' => $data['device_name'] ?? 'web',
@@ -175,7 +130,7 @@ class AuthController extends Controller
         ];
 
         if ($includeUser) {
-            $user->loadMissing('role.permissions', 'permissions', 'tenant');
+            $user->loadMissing('role.permissions', 'permissions', 'tenant', 'site');
             $response['user'] = new UserResource($user);
         }
 

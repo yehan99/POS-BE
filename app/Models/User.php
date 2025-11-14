@@ -31,6 +31,7 @@ class User extends Authenticatable
         'phone',
         'tenant_id',
         'role_id',
+        'site_id',
         'is_active',
         'metadata',
         'password',
@@ -76,6 +77,14 @@ class User extends Authenticatable
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * Get the primary site assigned to the user.
+     */
+    public function site(): BelongsTo
+    {
+        return $this->belongsTo(Site::class);
     }
 
     /**

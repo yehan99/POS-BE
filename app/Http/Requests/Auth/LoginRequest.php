@@ -14,8 +14,7 @@ class LoginRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'email' => $this->input('email'),
-            'password' => $this->input('password'),
+            'id_token' => $this->input('idToken', $this->input('credential', $this->input('id_token'))),
             'device_name' => $this->input('deviceName', $this->input('device_name')),
         ]);
     }
@@ -23,8 +22,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'email', 'max:255'],
-            'password' => ['required', 'string'],
+            'id_token' => ['required', 'string'],
             'device_name' => ['nullable', 'string', 'max:120'],
         ];
     }

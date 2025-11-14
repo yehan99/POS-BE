@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Site;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -26,6 +27,8 @@ class UserFactory extends Factory
         $firstName = fake()->firstName();
         $lastName = fake()->lastName();
 
+        $site = Site::factory()->create();
+
         return [
             'first_name' => $firstName,
             'last_name' => $lastName,
@@ -34,8 +37,9 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('Password@123'),
             'remember_token' => Str::random(10),
-            'tenant_id' => \App\Models\Tenant::factory(),
+            'tenant_id' => $site->tenant_id,
             'role_id' => \App\Models\Role::factory(),
+            'site_id' => $site->id,
             'is_active' => true,
         ];
     }
