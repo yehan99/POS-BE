@@ -9,6 +9,7 @@ use App\Http\Resources\UserResource;
 use App\Models\Role;
 use App\Models\Site;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,25 +25,61 @@ class UserController extends Controller
     {
         $this->ensureCanManageUsers($request);
 
-        $search = $request->query('search');
+        $search = $this->normalizeSearchTerm($request->query('search'));
+        $status = $this->normalizeStatus($request->query('status'));
+        $perPage = $this->sanitizePerPage((int) $request->query('perPage', 25));
+        $page = max((int) $request->query('page', 1), 1);
 
         $users = User::query()
-            ->with('role.permissions', 'permissions', 'tenant', 'site')
+            ->select([
+                'id',
+                'tenant_id',
+                'role_id',
+                'site_id',
+                'first_name',
+                'last_name',
+                'email',
+                'phone',
+                'is_active',
+                'metadata',
+                'last_login_at',
+                'created_at',
+                'updated_at',
+            ])
+            ->with([
+                'role:id,name,slug',
+                'role.permissions:id,slug',
+                'permissions:id,slug',
+                'tenant:id,name,business_type,country,phone,settings',
+                'site:id,name,slug,description',
+            ])
             ->where('tenant_id', $request->user()->tenant_id)
             ->when($search, function ($query, $term) {
-                $term = '%'.strtolower($term).'%';
+                $like = '%'.$term.'%';
 
-                $query->where(function ($inner) use ($term) {
-                    $inner->whereRaw('LOWER(first_name) LIKE ?', [$term])
-                        ->orWhereRaw('LOWER(last_name) LIKE ?', [$term])
-                        ->orWhereRaw('LOWER(email) LIKE ?', [$term]);
+                $query->where(function ($inner) use ($like) {
+                    $inner->whereRaw('LOWER(first_name) LIKE ?', [$like])
+                        ->orWhereRaw('LOWER(last_name) LIKE ?', [$like])
+                        ->orWhereRaw('LOWER(email) LIKE ?', [$like]);
                 });
+            })
+            ->when($status, function ($query, $status) {
+                if ($status === 'active') {
+                    $query->where('is_active', true);
+                } elseif ($status === 'inactive') {
+                    $query->where('is_active', false);
+                } elseif ($status === 'invited') {
+                    $query->whereNull('last_login_at');
+                }
             })
             ->orderBy('first_name')
             ->orderBy('last_name')
-            ->get();
+            ->paginate($perPage, ['*'], 'page', $page);
 
-        return UserResource::collection($users)->response();
+        return UserResource::collection($users)
+            ->additional([
+                'meta' => $this->buildPaginationMeta($users),
+            ])->response();
     }
 
     public function store(StoreUserRequest $request): JsonResponse
@@ -213,5 +250,55 @@ class UserController extends Controller
                 'user' => ['The requested user does not belong to the current tenant.'],
             ]);
         }
+    }
+
+    private function buildPaginationMeta(LengthAwarePaginator $paginator): array
+    {
+        return [
+            'total' => $paginator->total(),
+            'perPage' => $paginator->perPage(),
+            'currentPage' => $paginator->currentPage(),
+            'lastPage' => $paginator->lastPage(),
+            'from' => $paginator->firstItem(),
+            'to' => $paginator->lastItem(),
+            'hasNextPage' => $paginator->hasMorePages(),
+        ];
+    }
+
+    private function sanitizePerPage(int $perPage): int
+    {
+        if ($perPage <= 0) {
+            return 25;
+        }
+
+        return min($perPage, 100);
+    }
+
+    private function normalizeSearchTerm(?string $term): ?string
+    {
+        if ($term === null) {
+            return null;
+        }
+
+        $trimmed = mb_substr(trim($term), 0, 120);
+
+        if ($trimmed === '') {
+            return null;
+        }
+
+        return mb_strtolower($trimmed);
+    }
+
+    private function normalizeStatus(?string $status): ?string
+    {
+        if ($status === null) {
+            return null;
+        }
+
+        $normalized = mb_strtolower(trim($status));
+
+        return in_array($normalized, ['active', 'inactive', 'invited'], true)
+            ? $normalized
+            : null;
     }
 }
