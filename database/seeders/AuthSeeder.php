@@ -57,6 +57,8 @@ class AuthSeeder extends Seeder
             ['slug' => 'customer.read', 'name' => 'View Customers', 'module' => 'customers'],
             ['slug' => 'customer.update', 'name' => 'Update Customers', 'module' => 'customers'],
             ['slug' => 'customer.delete', 'name' => 'Delete Customers', 'module' => 'customers'],
+            ['slug' => 'customer.loyalty.read', 'name' => 'View Customer Loyalty', 'module' => 'customers'],
+            ['slug' => 'customer.loyalty.record', 'name' => 'Record Loyalty Transactions', 'module' => 'customers'],
 
             // Reports
             ['slug' => 'report.sales', 'name' => 'Access Sales Reports', 'module' => 'reports'],
@@ -110,6 +112,7 @@ class AuthSeeder extends Seeder
                     'sale.create', 'sale.read', 'sale.refund', 'sale.void',
                     'inventory.create', 'inventory.read', 'inventory.update', 'inventory.adjust',
                     'customer.create', 'customer.read', 'customer.update', 'customer.delete',
+                    'customer.loyalty.read', 'customer.loyalty.record',
                     'report.sales', 'report.inventory', 'report.customers', 'report.financial',
                     'settings.read', 'settings.update', 'user.management',
                 ],
@@ -123,6 +126,7 @@ class AuthSeeder extends Seeder
                     'sale.create', 'sale.read', 'sale.refund',
                     'inventory.create', 'inventory.read', 'inventory.update', 'inventory.adjust',
                     'customer.create', 'customer.read', 'customer.update',
+                    'customer.loyalty.read', 'customer.loyalty.record',
                     'report.sales', 'report.inventory', 'report.customers',
                     'settings.read',
                 ],
@@ -134,6 +138,7 @@ class AuthSeeder extends Seeder
                 'permissions' => [
                     'sale.create', 'sale.read',
                     'customer.create', 'customer.read',
+                    'customer.loyalty.read', 'customer.loyalty.record',
                     'report.sales',
                 ],
             ],
@@ -145,7 +150,7 @@ class AuthSeeder extends Seeder
                     'product.read',
                     'sale.read',
                     'inventory.read',
-                    'customer.read',
+                    'customer.read', 'customer.loyalty.read',
                     'report.sales', 'report.inventory', 'report.customers',
                 ],
             ],
@@ -197,7 +202,7 @@ class AuthSeeder extends Seeder
             ]
         );
 
-        User::query()->updateOrCreate(
+        $user = User::withTrashed()->updateOrCreate(
             ['email' => 'founder@paradisepos.com'],
             [
                 'tenant_id' => $tenant->id,
@@ -215,5 +220,9 @@ class AuthSeeder extends Seeder
                 'remember_token' => Str::random(20),
             ]
         );
+
+        if ($user->trashed()) {
+            $user->restore();
+        }
     }
 }
