@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLoyaltyTransactionController;
+use App\Http\Controllers\ProductCategoryController;
+use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->name('auth.')->group(function () {
@@ -29,4 +31,26 @@ Route::middleware('auth.jwt')->group(function () {
     Route::get('customers/{customer}/loyalty-transactions', [CustomerLoyaltyTransactionController::class, 'index'])->name('customers.loyalty-transactions.index');
     Route::post('customers/{customer}/loyalty-transactions', [CustomerLoyaltyTransactionController::class, 'store'])->name('customers.loyalty-transactions.store');
     Route::apiResource('customers', CustomerController::class);
+
+    Route::get('categories/active', [ProductCategoryController::class, 'active'])->name('categories.active');
+    Route::get('categories/tree', [ProductCategoryController::class, 'tree'])->name('categories.tree');
+    Route::put('categories/reorder', [ProductCategoryController::class, 'reorder'])->name('categories.reorder');
+    Route::apiResource('categories', ProductCategoryController::class);
+
+    Route::get('products/low-stock', [ProductController::class, 'lowStock'])->name('products.low-stock');
+    Route::get('products/out-of-stock', [ProductController::class, 'outOfStock'])->name('products.out-of-stock');
+    Route::get('products/generate-sku', [ProductController::class, 'generateSku'])->name('products.generate-sku');
+    Route::get('products/generate-barcode', [ProductController::class, 'generateBarcode'])->name('products.generate-barcode');
+    Route::get('products/check-sku', [ProductController::class, 'checkSku'])->name('products.check-sku');
+    Route::get('products/check-barcode', [ProductController::class, 'checkBarcode'])->name('products.check-barcode');
+    Route::post('products/bulk-delete', [ProductController::class, 'bulkDelete'])->name('products.bulk-delete');
+    Route::post('products/bulk-import', [ProductController::class, 'bulkImport'])->name('products.bulk-import');
+    Route::get('products/export', [ProductController::class, 'export'])->name('products.export');
+    Route::get('products/statistics', [ProductController::class, 'statistics'])->name('products.statistics');
+    Route::get('products/brands', [ProductController::class, 'brands'])->name('products.brands');
+    Route::get('products/tags', [ProductController::class, 'tags'])->name('products.tags');
+    Route::patch('products/{product}/stock', [ProductController::class, 'updateStock'])->name('products.update-stock');
+    Route::post('products/{product}/upload-image', [ProductController::class, 'uploadImage'])->name('products.upload-image');
+    Route::delete('products/{product}/delete-image', [ProductController::class, 'deleteImage'])->name('products.delete-image');
+    Route::apiResource('products', ProductController::class);
 });
