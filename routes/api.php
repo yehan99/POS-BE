@@ -6,6 +6,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLoyaltyTransactionController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->name('auth.')->group(function () {
@@ -53,4 +54,17 @@ Route::middleware('auth.jwt')->group(function () {
     Route::post('products/{product}/upload-image', [ProductController::class, 'uploadImage'])->name('products.upload-image');
     Route::delete('products/{product}/delete-image', [ProductController::class, 'deleteImage'])->name('products.delete-image');
     Route::apiResource('products', ProductController::class);
+
+    Route::prefix('suppliers')->name('suppliers.')->group(function () {
+        Route::get('dashboard', [SupplierController::class, 'dashboard'])->name('dashboard');
+        Route::get('generate-code', [SupplierController::class, 'generateCode'])->name('generate-code');
+        Route::get('active', [SupplierController::class, 'active'])->name('active');
+        Route::post('bulk-delete', [SupplierController::class, 'bulkDelete'])->name('bulk-delete');
+        Route::get('export', [SupplierController::class, 'export'])->name('export');
+        Route::post('import', [SupplierController::class, 'import'])->name('import');
+        Route::get('{supplier}/statistics', [SupplierController::class, 'statistics'])->name('statistics');
+        Route::get('{supplier}/purchase-history', [SupplierController::class, 'purchaseHistory'])->name('purchase-history');
+    });
+
+    Route::apiResource('suppliers', SupplierController::class);
 });
