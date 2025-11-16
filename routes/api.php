@@ -6,6 +6,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLoyaltyTransactionController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
@@ -67,4 +68,20 @@ Route::middleware('auth.jwt')->group(function () {
     });
 
     Route::apiResource('suppliers', SupplierController::class);
+
+    Route::prefix('purchase-orders')->name('purchase-orders.')->group(function () {
+        Route::get('dashboard', [PurchaseOrderController::class, 'dashboard'])->name('dashboard');
+        Route::get('statistics', [PurchaseOrderController::class, 'statistics'])->name('statistics');
+        Route::get('generate-number', [PurchaseOrderController::class, 'generateNumber'])->name('generate-number');
+        Route::get('export', [PurchaseOrderController::class, 'export'])->name('export');
+        Route::get('{purchase_order}/pdf', [PurchaseOrderController::class, 'pdf'])->name('pdf');
+        Route::get('{purchase_order}/grns', [PurchaseOrderController::class, 'grns'])->name('grns');
+        Route::post('{purchase_order}/approve', [PurchaseOrderController::class, 'approve'])->name('approve');
+        Route::post('{purchase_order}/ordered', [PurchaseOrderController::class, 'ordered'])->name('ordered');
+        Route::post('{purchase_order}/receive', [PurchaseOrderController::class, 'receive'])->name('receive');
+        Route::post('{purchase_order}/send', [PurchaseOrderController::class, 'send'])->name('send');
+        Route::post('{purchase_order}/cancel', [PurchaseOrderController::class, 'cancel'])->name('cancel');
+    });
+
+    Route::apiResource('purchase-orders', PurchaseOrderController::class);
 });
