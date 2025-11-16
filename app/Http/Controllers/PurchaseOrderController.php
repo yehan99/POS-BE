@@ -8,6 +8,7 @@ use App\Http\Resources\PurchaseOrderResource;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\Supplier;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\CarbonPeriod;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
@@ -89,6 +90,14 @@ class PurchaseOrderController extends Controller
 
         return response()->json([
             'data' => $collection->toArray($request),
+            'pagination' => [
+                'page' => $paginator->currentPage(),
+                'limit' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'totalPages' => $paginator->lastPage(),
+                'hasNext' => $paginator->hasMorePages(),
+                'hasPrev' => $paginator->currentPage() > 1,
+            ],
             'total' => $paginator->total(),
             'page' => $paginator->currentPage(),
             'pageSize' => $paginator->perPage(),
@@ -592,11 +601,40 @@ class PurchaseOrderController extends Controller
     public function pdf(PurchaseOrder $purchaseOrder): StreamedResponse
     {
         $order = $purchaseOrder->load(['supplier', 'items']);
-        $content = $this->renderPdfString($order);
+        $subtotal = $order->subtotal ?? $order->items->sum(fn (PurchaseOrderItem $item) => (float) $item->quantity * (float) $item->unit_cost);
+        $tax = $order->tax ?? $order->items->sum(fn (PurchaseOrderItem $item) => (float) $item->tax);
+        $discount = $order->discount ?? $order->items->sum(fn (PurchaseOrderItem $item) => (float) $item->discount);
+        $shipping = $order->shipping_cost ?? 0;
+
+        $totals = [
+            'subtotal' => (float) $subtotal,
+            'tax' => (float) $tax,
+            'discount' => (float) $discount,
+            'shipping' => (float) $shipping,
+            'total' => (float) ($order->total ?? max($subtotal + $tax - $discount + $shipping, 0)),
+        ];
+
+        $pdf = Pdf::loadView('purchase-orders.pdf', [
+            'order' => $order,
+            'supplier' => $order->supplier,
+            'items' => $order->items,
+            'totals' => $totals,
+            'company' => [
+                'name' => config('app.name', 'Paradise POS'),
+                'address' => config('app.company.address', '123 Paradise Road, Colombo'),
+                'email' => config('app.company.email', 'hello@paradisepos.com'),
+                'phone' => config('app.company.phone', '+94 11 123 4567'),
+                'logo' => config('app.company.logo'),
+            ],
+        ])->setPaper('a4')->setOptions([
+            'dpi' => 96,
+            'isRemoteEnabled' => true,
+        ]);
+
         $fileName = 'PO_' . $order->po_number . '.pdf';
 
-        return response()->streamDownload(static function () use ($content) {
-            echo $content;
+        return response()->streamDownload(static function () use ($pdf) {
+            echo $pdf->output();
         }, $fileName, [
             'Content-Type' => 'application/pdf',
         ]);

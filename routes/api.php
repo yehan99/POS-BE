@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLoyaltyTransactionController;
+use App\Http\Controllers\Inventory\InventoryLocationController;
+use App\Http\Controllers\Inventory\StockTransferController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseOrderController;
@@ -68,6 +70,24 @@ Route::middleware('auth.jwt')->group(function () {
     });
 
     Route::apiResource('suppliers', SupplierController::class);
+
+    Route::prefix('inventory')->name('inventory.')->group(function () {
+        Route::apiResource('locations', InventoryLocationController::class)
+            ->only(['index', 'store', 'show', 'update']);
+
+        Route::prefix('stock-transfers')->name('stock-transfers.')->group(function () {
+            Route::get('dashboard', [StockTransferController::class, 'dashboard'])->name('dashboard');
+            Route::get('export', [StockTransferController::class, 'export'])->name('export');
+            Route::get('generate-number', [StockTransferController::class, 'generateNumber'])->name('generate-number');
+            Route::post('{stock_transfer}/approve', [StockTransferController::class, 'approve'])->name('approve');
+            Route::post('{stock_transfer}/ship', [StockTransferController::class, 'ship'])->name('ship');
+            Route::post('{stock_transfer}/receive', [StockTransferController::class, 'receive'])->name('receive');
+            Route::post('{stock_transfer}/cancel', [StockTransferController::class, 'cancel'])->name('cancel');
+        });
+
+        Route::apiResource('stock-transfers', StockTransferController::class)
+            ->only(['index', 'store', 'show']);
+    });
 
     Route::prefix('purchase-orders')->name('purchase-orders.')->group(function () {
         Route::get('dashboard', [PurchaseOrderController::class, 'dashboard'])->name('dashboard');

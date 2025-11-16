@@ -37,6 +37,7 @@ class StorePurchaseOrderRequest extends FormRequest
             'items.*.productName' => ['required', 'string', 'max:200'],
             'items.*.productSku' => ['nullable', 'string', 'max:120'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.receivedQuantity' => ['nullable', 'integer', 'min:0'],
             'items.*.unitCost' => ['required', 'numeric', 'min:0'],
             'items.*.tax' => ['nullable', 'numeric', 'min:0'],
             'items.*.discount' => ['nullable', 'numeric', 'min:0'],

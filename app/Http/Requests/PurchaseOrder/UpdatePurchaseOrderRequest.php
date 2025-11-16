@@ -38,6 +38,7 @@ class UpdatePurchaseOrderRequest extends FormRequest
             'items.*.productName' => ['required_with:items', 'string', 'max:200'],
             'items.*.productSku' => ['nullable', 'string', 'max:120'],
             'items.*.quantity' => ['required_with:items', 'integer', 'min:1'],
+            'items.*.receivedQuantity' => ['nullable', 'integer', 'min:0'],
             'items.*.unitCost' => ['required_with:items', 'numeric', 'min:0'],
             'items.*.tax' => ['nullable', 'numeric', 'min:0'],
             'items.*.discount' => ['nullable', 'numeric', 'min:0'],
