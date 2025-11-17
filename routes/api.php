@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLoyaltyTransactionController;
+use App\Http\Controllers\Hardware\HardwareConfigController;
 use App\Http\Controllers\Inventory\InventoryDashboardController;
 use App\Http\Controllers\Inventory\InventoryLocationController;
 use App\Http\Controllers\Inventory\StockAdjustmentController;
@@ -135,4 +136,15 @@ Route::middleware('auth.jwt')->group(function () {
     });
 
     Route::apiResource('purchase-orders', PurchaseOrderController::class);
+
+    // Hardware Configuration endpoints
+    Route::prefix('hardware/devices')->name('hardware.devices.')->group(function () {
+        Route::get('connection-status', [HardwareConfigController::class, 'connectionStatus'])->name('connection-status');
+        Route::delete('clear-all', [HardwareConfigController::class, 'clearAll'])->name('clear-all');
+        Route::post('bulk-delete', [HardwareConfigController::class, 'bulkDelete'])->name('bulk-delete');
+        Route::post('{id}/test', [HardwareConfigController::class, 'testConnection'])->name('test');
+        Route::put('{id}/toggle', [HardwareConfigController::class, 'toggleEnabled'])->name('toggle');
+    });
+
+    Route::apiResource('hardware/devices', HardwareConfigController::class);
 });
