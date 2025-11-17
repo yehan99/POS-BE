@@ -327,6 +327,26 @@ class ProductController extends Controller
         return response()->json(['exists' => $exists]);
     }
 
+    public function getByBarcode(string $barcode): JsonResponse
+    {
+        $product = Product::with('category')
+            ->where('barcode', $barcode)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => ProductResource::make($product)->toArray(request())
+        ]);
+    }
+
     public function uploadImage(Request $request, Product $product): JsonResponse
     {
         $request->validate([

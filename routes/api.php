@@ -6,11 +6,13 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLoyaltyTransactionController;
 use App\Http\Controllers\Hardware\HardwareConfigController;
 use App\Http\Controllers\Hardware\HardwareStatusController;
+use App\Http\Controllers\Hardware\ReceiptTemplateController;
 use App\Http\Controllers\Inventory\InventoryDashboardController;
 use App\Http\Controllers\Inventory\InventoryLocationController;
 use App\Http\Controllers\Inventory\StockAdjustmentController;
 use App\Http\Controllers\Inventory\StockAlertsController;
 use App\Http\Controllers\Inventory\StockTransferController;
+use App\Http\Controllers\POS\SalesTransactionController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseOrderController;
@@ -52,6 +54,7 @@ Route::middleware('auth.jwt')->group(function () {
     Route::get('products/generate-barcode', [ProductController::class, 'generateBarcode'])->name('products.generate-barcode');
     Route::get('products/check-sku', [ProductController::class, 'checkSku'])->name('products.check-sku');
     Route::get('products/check-barcode', [ProductController::class, 'checkBarcode'])->name('products.check-barcode');
+    Route::get('products/barcode/{barcode}', [ProductController::class, 'getByBarcode'])->name('products.get-by-barcode');
     Route::post('products/bulk-delete', [ProductController::class, 'bulkDelete'])->name('products.bulk-delete');
     Route::post('products/bulk-import', [ProductController::class, 'bulkImport'])->name('products.bulk-import');
     Route::get('products/export', [ProductController::class, 'export'])->name('products.export');
@@ -157,5 +160,31 @@ Route::middleware('auth.jwt')->group(function () {
         Route::get('alerts', [HardwareStatusController::class, 'alerts'])->name('alerts');
         Route::get('events', [HardwareStatusController::class, 'events'])->name('events');
         Route::get('statistics-by-type', [HardwareStatusController::class, 'statisticsByType'])->name('statistics-by-type');
+    });
+
+    // Receipt Template endpoints
+    Route::prefix('hardware/receipt-templates')->name('hardware.receipt-templates.')->group(function () {
+        Route::get('/', [ReceiptTemplateController::class, 'index'])->name('index');
+        Route::post('/', [ReceiptTemplateController::class, 'store'])->name('store');
+        Route::get('/default', [ReceiptTemplateController::class, 'getDefault'])->name('default');
+        Route::get('/default-structure', [ReceiptTemplateController::class, 'getDefaultStructure'])->name('default-structure');
+        Route::get('/{id}', [ReceiptTemplateController::class, 'show'])->name('show');
+        Route::put('/{id}', [ReceiptTemplateController::class, 'update'])->name('update');
+        Route::delete('/{id}', [ReceiptTemplateController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/set-default', [ReceiptTemplateController::class, 'setDefault'])->name('set-default');
+        Route::post('/{id}/duplicate', [ReceiptTemplateController::class, 'duplicate'])->name('duplicate');
+    });
+
+    // POS Sales Transaction endpoints
+    Route::prefix('transactions')->name('transactions.')->group(function () {
+        Route::get('/', [SalesTransactionController::class, 'index'])->name('index');
+        Route::post('/', [SalesTransactionController::class, 'store'])->name('store');
+        Route::get('/search', [SalesTransactionController::class, 'search'])->name('search');
+        Route::get('/summary', [SalesTransactionController::class, 'summary'])->name('summary');
+        Route::get('/export', [SalesTransactionController::class, 'export'])->name('export');
+        Route::get('/number/{transactionNumber}', [SalesTransactionController::class, 'showByNumber'])->name('show-by-number');
+        Route::get('/{id}', [SalesTransactionController::class, 'show'])->name('show');
+        Route::post('/{id}/refund', [SalesTransactionController::class, 'refund'])->name('refund');
+        Route::post('/{id}/cancel', [SalesTransactionController::class, 'cancel'])->name('cancel');
     });
 });
