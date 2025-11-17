@@ -4,8 +4,10 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLoyaltyTransactionController;
+use App\Http\Controllers\Inventory\InventoryDashboardController;
 use App\Http\Controllers\Inventory\InventoryLocationController;
 use App\Http\Controllers\Inventory\StockAdjustmentController;
+use App\Http\Controllers\Inventory\StockAlertsController;
 use App\Http\Controllers\Inventory\StockTransferController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
@@ -73,6 +75,22 @@ Route::middleware('auth.jwt')->group(function () {
     Route::apiResource('suppliers', SupplierController::class);
 
     Route::prefix('inventory')->name('inventory.')->group(function () {
+        // Dashboard endpoints
+        Route::get('dashboard', [InventoryDashboardController::class, 'index'])->name('dashboard');
+        Route::get('dashboard/metrics', [InventoryDashboardController::class, 'metrics'])->name('dashboard.metrics');
+        Route::get('dashboard/pipeline', [InventoryDashboardController::class, 'pipeline'])->name('dashboard.pipeline');
+        Route::get('dashboard/exceptions', [InventoryDashboardController::class, 'exceptions'])->name('dashboard.exceptions');
+        Route::get('dashboard/alerts', [InventoryDashboardController::class, 'alerts'])->name('dashboard.alerts');
+
+        // Stock Alerts endpoints
+        Route::prefix('alerts')->name('alerts.')->group(function () {
+            Route::get('/', [StockAlertsController::class, 'index'])->name('index');
+            Route::get('summary', [StockAlertsController::class, 'summary'])->name('summary');
+            Route::put('{id}/acknowledge', [StockAlertsController::class, 'acknowledge'])->name('acknowledge');
+            Route::put('{id}/resolve', [StockAlertsController::class, 'resolve'])->name('resolve');
+            Route::post('bulk-resolve', [StockAlertsController::class, 'bulkResolve'])->name('bulk-resolve');
+        });
+
         Route::apiResource('locations', InventoryLocationController::class)
             ->only(['index', 'store', 'show', 'update']);
 
