@@ -78,8 +78,8 @@ return new class extends Migration
             $table->string('name')->nullable();
             $table->string('access_token_id')->unique();
             $table->string('refresh_token_hash');
-            $table->dateTime('access_token_expires_at');
-            $table->dateTime('refresh_token_expires_at');
+            $table->timestamp('access_token_expires_at')->nullable();
+            $table->timestamp('refresh_token_expires_at')->nullable();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->boolean('revoked')->default(false);

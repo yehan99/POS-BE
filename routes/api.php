@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLoyaltyTransactionController;
 use App\Http\Controllers\Inventory\InventoryLocationController;
+use App\Http\Controllers\Inventory\StockAdjustmentController;
 use App\Http\Controllers\Inventory\StockTransferController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
@@ -74,6 +75,18 @@ Route::middleware('auth.jwt')->group(function () {
     Route::prefix('inventory')->name('inventory.')->group(function () {
         Route::apiResource('locations', InventoryLocationController::class)
             ->only(['index', 'store', 'show', 'update']);
+
+        Route::prefix('adjustments')->name('adjustments.')->group(function () {
+            Route::get('dashboard', [StockAdjustmentController::class, 'dashboard'])->name('dashboard');
+            Route::get('export', [StockAdjustmentController::class, 'export'])->name('export');
+            Route::get('generate-number', [StockAdjustmentController::class, 'generateNumber'])->name('generate-number');
+            Route::post('bulk', [StockAdjustmentController::class, 'bulkStore'])->name('bulk');
+            Route::post('{stock_adjustment}/approve', [StockAdjustmentController::class, 'approve'])->name('approve');
+            Route::post('{stock_adjustment}/reject', [StockAdjustmentController::class, 'reject'])->name('reject');
+        });
+
+        Route::apiResource('adjustments', StockAdjustmentController::class)
+            ->only(['index', 'store', 'show']);
 
         Route::prefix('stock-transfers')->name('stock-transfers.')->group(function () {
             Route::get('dashboard', [StockTransferController::class, 'dashboard'])->name('dashboard');
