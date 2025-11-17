@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLoyaltyTransactionController;
 use App\Http\Controllers\Hardware\HardwareConfigController;
+use App\Http\Controllers\Hardware\HardwareStatusController;
 use App\Http\Controllers\Inventory\InventoryDashboardController;
 use App\Http\Controllers\Inventory\InventoryLocationController;
 use App\Http\Controllers\Inventory\StockAdjustmentController;
@@ -147,4 +148,14 @@ Route::middleware('auth.jwt')->group(function () {
     });
 
     Route::apiResource('hardware/devices', HardwareConfigController::class);
+
+    // Hardware Status Dashboard endpoints
+    Route::prefix('hardware/status')->name('hardware.status.')->group(function () {
+        Route::get('dashboard', [HardwareStatusController::class, 'dashboard'])->name('dashboard');
+        Route::get('system-health', [HardwareStatusController::class, 'systemHealth'])->name('system-health');
+        Route::get('device-health', [HardwareStatusController::class, 'deviceHealth'])->name('device-health');
+        Route::get('alerts', [HardwareStatusController::class, 'alerts'])->name('alerts');
+        Route::get('events', [HardwareStatusController::class, 'events'])->name('events');
+        Route::get('statistics-by-type', [HardwareStatusController::class, 'statisticsByType'])->name('statistics-by-type');
+    });
 });
