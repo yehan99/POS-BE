@@ -151,6 +151,23 @@ class CustomerController extends Controller
     }
 
     /**
+     * Search customers by phone number.
+     */
+    public function searchByPhone(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone' => ['required', 'string', 'min:10'],
+        ]);
+
+        $customers = Customer::where('phone', 'like', "%{$validated['phone']}%")
+            ->where('is_active', true)
+            ->get()
+            ->map(fn ($customer) => CustomerResource::make($customer)->toArray(request()));
+
+        return response()->json($customers);
+    }
+
+    /**
      * Generate a new unique customer code.
      */
     public function generateCode(): JsonResponse

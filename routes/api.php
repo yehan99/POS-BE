@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLoyaltyTransactionController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Hardware\HardwareConfigController;
 use App\Http\Controllers\Hardware\HardwareStatusController;
 use App\Http\Controllers\Hardware\ReceiptTemplateController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Inventory\StockAdjustmentController;
 use App\Http\Controllers\Inventory\StockAlertsController;
 use App\Http\Controllers\Inventory\StockTransferController;
 use App\Http\Controllers\POS\SalesTransactionController;
+use App\Http\Controllers\POS\TransactionDashboardController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseOrderController;
@@ -31,12 +33,26 @@ Route::prefix('auth')->name('auth.')->group(function () {
 });
 
 Route::middleware('auth.jwt')->group(function () {
+    // Dashboard endpoints
+    Route::prefix('dashboard')->name('dashboard.')->group(function () {
+        Route::get('summary', [DashboardController::class, 'summary'])->name('summary');
+        Route::get('kpis', [DashboardController::class, 'kpis'])->name('kpis');
+        Route::get('sales-trend', [DashboardController::class, 'salesTrend'])->name('sales-trend');
+        Route::get('category-sales', [DashboardController::class, 'categorySales'])->name('category-sales');
+        Route::get('payment-method-sales', [DashboardController::class, 'paymentMethodSales'])->name('payment-method-sales');
+        Route::get('recent-transactions', [DashboardController::class, 'recentTransactions'])->name('recent-transactions');
+        Route::get('inventory-alerts', [DashboardController::class, 'inventoryAlerts'])->name('inventory-alerts');
+        Route::get('top-products', [DashboardController::class, 'topProducts'])->name('top-products');
+        Route::get('top-customers', [DashboardController::class, 'topCustomers'])->name('top-customers');
+    });
+
     Route::get('users/options', [UserController::class, 'options'])->name('users.options');
     Route::patch('users/{user}/status', [UserController::class, 'updateStatus'])->name('users.status');
     Route::apiResource('users', UserController::class)
         ->only(['index', 'store', 'show', 'update', 'destroy']);
 
     Route::get('customers/statistics', [CustomerController::class, 'statistics'])->name('customers.statistics');
+    Route::get('customers/search', [CustomerController::class, 'searchByPhone'])->name('customers.search');
     Route::get('customers/generate-code', [CustomerController::class, 'generateCode'])->name('customers.generate-code');
     Route::post('customers/bulk-delete', [CustomerController::class, 'bulkDelete'])->name('customers.bulk-delete');
     Route::get('customers/{customer}/loyalty-transactions', [CustomerLoyaltyTransactionController::class, 'index'])->name('customers.loyalty-transactions.index');
@@ -181,6 +197,7 @@ Route::middleware('auth.jwt')->group(function () {
         Route::post('/', [SalesTransactionController::class, 'store'])->name('store');
         Route::get('/search', [SalesTransactionController::class, 'search'])->name('search');
         Route::get('/summary', [SalesTransactionController::class, 'summary'])->name('summary');
+        Route::get('/dashboard', [TransactionDashboardController::class, 'index'])->name('dashboard');
         Route::get('/export', [SalesTransactionController::class, 'export'])->name('export');
         Route::get('/number/{transactionNumber}', [SalesTransactionController::class, 'showByNumber'])->name('show-by-number');
         Route::get('/{id}', [SalesTransactionController::class, 'show'])->name('show');
