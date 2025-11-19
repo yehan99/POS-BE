@@ -18,6 +18,11 @@ use App\Http\Controllers\POS\TransactionDashboardController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseOrderController;
+use App\Http\Controllers\Reports\CustomerReportController;
+use App\Http\Controllers\Reports\InventoryReportController;
+use App\Http\Controllers\Reports\ProductPerformanceReportController;
+use App\Http\Controllers\Reports\ReportsDashboardController;
+use App\Http\Controllers\Reports\SalesReportController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
@@ -156,6 +161,14 @@ Route::middleware('auth.jwt')->group(function () {
     });
 
     Route::apiResource('purchase-orders', PurchaseOrderController::class);
+
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('dashboard-summary', [ReportsDashboardController::class, 'summary'])->name('dashboard-summary');
+        Route::get('sales', [SalesReportController::class, 'show'])->name('sales');
+        Route::get('inventory', [InventoryReportController::class, 'show'])->name('inventory');
+        Route::get('customers', [CustomerReportController::class, 'show'])->name('customers');
+        Route::get('products/performance', [ProductPerformanceReportController::class, 'show'])->name('products.performance');
+    });
 
     // Hardware Configuration endpoints
     Route::prefix('hardware/devices')->name('hardware.devices.')->group(function () {
