@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SiteController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\UserController;
@@ -40,6 +41,11 @@ Route::prefix('auth')->name('auth.')->group(function () {
 });
 
 Route::middleware('auth.jwt')->group(function () {
+    Route::prefix('profile')->name('profile.')->group(function () {
+        Route::get('/', [ProfileController::class, 'show'])->name('show');
+        Route::patch('/', [ProfileController::class, 'update'])->name('update');
+    });
+
     // Dashboard endpoints
     Route::prefix('dashboard')->name('dashboard.')->group(function () {
         Route::get('summary', [DashboardController::class, 'summary'])->name('summary');
