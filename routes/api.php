@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\SiteController;
+use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLoyaltyTransactionController;
@@ -58,6 +59,12 @@ Route::middleware('auth.jwt')->group(function () {
         ->only(['index', 'store', 'show', 'update', 'destroy']);
 
     Route::get('sites', [SiteController::class, 'index'])->name('sites.index');
+
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', [SettingsController::class, 'show'])->name('show');
+        Route::patch('general', [SettingsController::class, 'updateGeneral'])->name('general');
+        Route::patch('notifications', [SettingsController::class, 'updateNotifications'])->name('notifications');
+    });
 
     Route::get('customers/statistics', [CustomerController::class, 'statistics'])->name('customers.statistics');
     Route::get('customers/search', [CustomerController::class, 'searchByPhone'])->name('customers.search');
