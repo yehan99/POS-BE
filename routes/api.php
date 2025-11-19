@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\SiteController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLoyaltyTransactionController;
@@ -55,6 +56,8 @@ Route::middleware('auth.jwt')->group(function () {
     Route::patch('users/{user}/status', [UserController::class, 'updateStatus'])->name('users.status');
     Route::apiResource('users', UserController::class)
         ->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    Route::get('sites', [SiteController::class, 'index'])->name('sites.index');
 
     Route::get('customers/statistics', [CustomerController::class, 'statistics'])->name('customers.statistics');
     Route::get('customers/search', [CustomerController::class, 'searchByPhone'])->name('customers.search');

@@ -9,6 +9,7 @@ use App\Http\Resources\UserResource;
 use App\Models\Role;
 use App\Models\Site;
 use App\Models\User;
+use App\Support\Concerns\HandlesSiteAccess;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +23,8 @@ use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
+    use HandlesSiteAccess;
+
     public function index(Request $request): JsonResponse
     {
         $this->ensureCanManageUsers($request);
@@ -30,6 +33,7 @@ class UserController extends Controller
         $status = $this->normalizeStatus($request->query('status'));
         $perPage = $this->sanitizePerPage((int) $request->query('perPage', 25));
         $page = max((int) $request->query('page', 1), 1);
+        $siteFilter = $this->resolveSiteFilter($request);
 
         $users = User::query()
             ->select([
@@ -55,6 +59,9 @@ class UserController extends Controller
                 'site:id,name,slug,description',
             ])
             ->where('tenant_id', $request->user()->tenant_id)
+            ->when($siteFilter !== null, function ($query) use ($siteFilter) {
+                $query->where('site_id', $siteFilter);
+            })
             ->when($search, function ($query, $term) {
                 $like = '%'.$term.'%';
 
@@ -135,6 +142,9 @@ class UserController extends Controller
                 ->whereKey($data['site_id'])
                 ->where('is_active', true)
                 ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $request->user()->tenant_id))
+                ->when(! $this->isSuperAdmin($request->user()), function ($query) use ($request) {
+                    $query->whereKey($request->user()->site_id);
+                })
                 ->first();
 
             if (! $site) {
@@ -197,6 +207,9 @@ class UserController extends Controller
                     ->whereKey($data['site_id'])
                     ->where('is_active', true)
                     ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $request->user()->tenant_id))
+                    ->when(! $this->isSuperAdmin($request->user()), function ($query) use ($request) {
+                        $query->whereKey($request->user()->site_id);
+                    })
                     ->first();
 
                 if (! $site) {
@@ -252,9 +265,7 @@ class UserController extends Controller
 
         $tenantId = $request->user()->tenant_id;
 
-        $sites = Site::query()
-            ->where('is_active', true)
-            ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $tenantId))
+        $sites = $this->accessibleSitesQuery($request->user())
             ->orderBy('name')
             ->get(['id', 'name', 'slug', 'description']);
 
@@ -343,5 +354,38 @@ class UserController extends Controller
         return in_array($normalized, ['active', 'inactive', 'invited'], true)
             ? $normalized
             : null;
+    }
+
+    private function resolveSiteFilter(Request $request): ?string
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return null;
+        }
+
+        $siteId = $request->query('siteId');
+
+        if ($this->isSuperAdmin($user)) {
+            if ($siteId) {
+                $this->assertSiteAccessible($user, $siteId);
+
+                return $siteId;
+            }
+
+            return null;
+        }
+
+        if (! $user->site_id) {
+            return null;
+        }
+
+        if ($siteId && $siteId !== $user->site_id) {
+            throw ValidationException::withMessages([
+                'siteId' => ['You can only view data for your assigned site.'],
+            ]);
+        }
+
+        return $user->site_id;
     }
 }
