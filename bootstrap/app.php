@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'auth.jwt' => \App\Http\Middleware\AuthenticateWithJwt::class,
+            'module.permission' => \App\Http\Middleware\EnsureModulePermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

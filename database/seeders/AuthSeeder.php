@@ -34,54 +34,17 @@ class AuthSeeder extends Seeder
      */
     private function seedPermissions(): array
     {
-        $catalog = [
-            // Product management
-            ['slug' => 'product.create', 'name' => 'Create Products', 'module' => 'products'],
-            ['slug' => 'product.read', 'name' => 'View Products', 'module' => 'products'],
-            ['slug' => 'product.update', 'name' => 'Update Products', 'module' => 'products'],
-            ['slug' => 'product.delete', 'name' => 'Delete Products', 'module' => 'products'],
-
-            // Sales
-            ['slug' => 'sale.create', 'name' => 'Create Sales', 'module' => 'sales'],
-            ['slug' => 'sale.read', 'name' => 'View Sales', 'module' => 'sales'],
-            ['slug' => 'sale.refund', 'name' => 'Process Refunds', 'module' => 'sales'],
-            ['slug' => 'sale.void', 'name' => 'Void Sales', 'module' => 'sales'],
-
-            // Inventory
-            ['slug' => 'inventory.create', 'name' => 'Create Inventory Records', 'module' => 'inventory'],
-            ['slug' => 'inventory.read', 'name' => 'View Inventory', 'module' => 'inventory'],
-            ['slug' => 'inventory.update', 'name' => 'Update Inventory', 'module' => 'inventory'],
-            ['slug' => 'inventory.adjust', 'name' => 'Adjust Inventory', 'module' => 'inventory'],
-
-            // Customers
-            ['slug' => 'customer.create', 'name' => 'Create Customers', 'module' => 'customers'],
-            ['slug' => 'customer.read', 'name' => 'View Customers', 'module' => 'customers'],
-            ['slug' => 'customer.update', 'name' => 'Update Customers', 'module' => 'customers'],
-            ['slug' => 'customer.delete', 'name' => 'Delete Customers', 'module' => 'customers'],
-            ['slug' => 'customer.loyalty.read', 'name' => 'View Customer Loyalty', 'module' => 'customers'],
-            ['slug' => 'customer.loyalty.record', 'name' => 'Record Loyalty Transactions', 'module' => 'customers'],
-
-            // Reports
-            ['slug' => 'report.sales', 'name' => 'Access Sales Reports', 'module' => 'reports'],
-            ['slug' => 'report.inventory', 'name' => 'Access Inventory Reports', 'module' => 'reports'],
-            ['slug' => 'report.customers', 'name' => 'Access Customer Reports', 'module' => 'reports'],
-            ['slug' => 'report.financial', 'name' => 'Access Financial Reports', 'module' => 'reports'],
-
-            // Settings
-            ['slug' => 'settings.read', 'name' => 'View Settings', 'module' => 'settings'],
-            ['slug' => 'settings.update', 'name' => 'Update Settings', 'module' => 'settings'],
-            ['slug' => 'user.management', 'name' => 'Manage Users', 'module' => 'settings'],
-        ];
+        $definitions = config('permission-modules.permission_definitions', []);
 
         $records = [];
 
-        foreach ($catalog as $permission) {
-            $records[$permission['slug']] = Permission::query()->updateOrCreate(
-                ['slug' => $permission['slug']],
+        foreach ($definitions as $slug => $definition) {
+            $records[$slug] = Permission::query()->updateOrCreate(
+                ['slug' => $slug],
                 [
-                    'name' => $permission['name'],
-                    'module' => $permission['module'],
-                    'description' => Arr::get($permission, 'description'),
+                    'name' => $definition['name'],
+                    'module' => $definition['module'] ?? 'general',
+                    'description' => Arr::get($definition, 'description'),
                 ]
             );
         }
