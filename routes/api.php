@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SiteController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\UserNotificationController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerLoyaltyTransactionController;
 use App\Http\Controllers\DashboardController;
@@ -70,6 +71,13 @@ Route::middleware('auth.jwt')->group(function () {
         Route::get('/', [SettingsController::class, 'show'])->name('show');
         Route::patch('general', [SettingsController::class, 'updateGeneral'])->name('general');
         Route::patch('notifications', [SettingsController::class, 'updateNotifications'])->name('notifications');
+    });
+
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [UserNotificationController::class, 'index'])->name('index');
+        Route::get('unread-count', [UserNotificationController::class, 'unreadCount'])->name('unread-count');
+        Route::patch('{notification}/read', [UserNotificationController::class, 'markAsRead'])->name('read');
+        Route::post('mark-all-read', [UserNotificationController::class, 'markAllAsRead'])->name('mark-all-read');
     });
 
     Route::get('customers/statistics', [CustomerController::class, 'statistics'])->name('customers.statistics');
