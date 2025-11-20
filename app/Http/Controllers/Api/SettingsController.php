@@ -32,6 +32,7 @@ class SettingsController extends Controller
         $payload = $request->validated();
 
         $payload['invoiceStartNumber'] = (int) ($payload['invoiceStartNumber'] ?? 1000);
+        $payload['taxRate'] = (float) ($payload['taxRate'] ?? 0);
 
         if (! empty($payload['defaultSiteId'])) {
             $this->assertSiteAccessible($request->user(), (string) $payload['defaultSiteId']);
@@ -105,6 +106,7 @@ class SettingsController extends Controller
         );
         $general['invoiceStartNumber'] = (int) ($general['invoiceStartNumber'] ?? 1000);
         $general['defaultSiteId'] = $general['defaultSiteId'] ?? null;
+        $general['taxRate'] = (float) ($general['taxRate'] ?? 0);
 
         $notifications = array_merge(
             $this->defaultNotifications(),
@@ -141,6 +143,7 @@ class SettingsController extends Controller
             'invoicePrefix' => 'INV',
             'invoiceStartNumber' => 1000,
             'defaultSiteId' => null,
+            'taxRate' => 0.0,
         ];
     }
 

@@ -113,6 +113,7 @@ class ProductController extends Controller
             'brand' => $data['brand'] ?? null,
             'barcode' => $data['barcode'] ?? null,
             'price' => $data['price'],
+            'loyalty_price' => $data['loyaltyPrice'] ?? $data['price'],
             'cost_price' => $data['costPrice'] ?? null,
             'tax_class' => $data['taxClassData'] ?? null,
             'is_active' => $data['isActive'] ?? true,
@@ -149,6 +150,7 @@ class ProductController extends Controller
                 'brand' => 'brand',
                 'barcode' => 'barcode',
                 'price' => 'price',
+                'loyaltyPrice' => 'loyalty_price',
                 'costPrice' => 'cost_price',
                 'taxClassData' => 'tax_class',
                 'isActive' => 'is_active',
@@ -169,7 +171,7 @@ class ProductController extends Controller
                         continue;
                     }
 
-                    if ($attribute === 'price' || $attribute === 'cost_price') {
+                    if (in_array($attribute, ['price', 'loyalty_price', 'cost_price'], true)) {
                         $product->{$attribute} = $value !== null ? (float) $value : null;
                         continue;
                     }
@@ -431,6 +433,12 @@ class ProductController extends Controller
             $sku = Str::upper(trim($data['sku'] ?? ''));
             $name = trim($data['name'] ?? '');
             $price = isset($data['price']) ? (float) $data['price'] : null;
+            $loyaltyPrice = null;
+            if (isset($data['loyalty_price'])) {
+                $loyaltyPrice = (float) $data['loyalty_price'];
+            } elseif (isset($data['loyaltyPrice'])) {
+                $loyaltyPrice = (float) $data['loyaltyPrice'];
+            }
 
             if (!$sku || !$name || $price === null) {
                 $failed++;
@@ -444,6 +452,7 @@ class ProductController extends Controller
                     [
                         'name' => $name,
                         'price' => $price,
+                        'loyalty_price' => $loyaltyPrice ?? $price,
                         'tenant_id' => $this->resolveTenantId(null),
                         'description' => $data['description'] ?? null,
                         'brand' => $data['brand'] ?? null,
@@ -478,7 +487,7 @@ class ProductController extends Controller
             $handle = fopen('php://output', 'w');
 
             fputcsv($handle, [
-                'sku', 'name', 'price', 'brand', 'barcode', 'stock_quantity', 'is_active', 'track_inventory', 'category_name',
+                'sku', 'name', 'price', 'loyalty_price', 'brand', 'barcode', 'stock_quantity', 'is_active', 'track_inventory', 'category_name',
             ]);
 
             $query = Product::query()->with('category')
@@ -506,6 +515,7 @@ class ProductController extends Controller
                             $product->sku,
                             $product->name,
                             $product->price,
+                            $product->loyalty_price,
                             $product->brand,
                             $product->barcode,
                             $product->stock_quantity,

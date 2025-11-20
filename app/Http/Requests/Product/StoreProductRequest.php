@@ -19,6 +19,10 @@ class StoreProductRequest extends FormRequest
             $payload['taxClassData'] = $payload['taxClass'];
         }
 
+        if (!array_key_exists('loyaltyPrice', $payload) && array_key_exists('price', $payload)) {
+            $payload['loyaltyPrice'] = $payload['price'];
+        }
+
         $this->replace($payload);
     }
 
@@ -41,6 +45,7 @@ class StoreProductRequest extends FormRequest
             'brand' => ['nullable', 'string', 'max:120'],
             'barcode' => ['nullable', 'string', 'max:120', Rule::unique('products', 'barcode')->whereNotNull('barcode')],
             'price' => ['required', 'numeric', 'min:0'],
+            'loyaltyPrice' => ['nullable', 'numeric', 'min:0'],
             'costPrice' => ['nullable', 'numeric', 'min:0'],
             'taxClassData' => ['nullable', 'array'],
             'isActive' => ['nullable', 'boolean'],

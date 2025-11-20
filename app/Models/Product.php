@@ -27,6 +27,7 @@ class Product extends Model
         'brand',
         'barcode',
         'price',
+        'loyalty_price',
         'cost_price',
         'tax_class',
         'is_active',
@@ -44,6 +45,7 @@ class Product extends Model
 
     protected $casts = [
         'price' => 'decimal:2',
+        'loyalty_price' => 'decimal:2',
         'cost_price' => 'decimal:2',
         'tax_class' => 'array',
         'is_active' => 'boolean',

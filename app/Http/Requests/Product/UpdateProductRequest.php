@@ -19,6 +19,10 @@ class UpdateProductRequest extends FormRequest
             $payload['taxClassData'] = $payload['taxClass'];
         }
 
+        if (!array_key_exists('loyaltyPrice', $payload) && array_key_exists('price', $payload)) {
+            $payload['loyaltyPrice'] = $payload['price'];
+        }
+
         $this->replace($payload);
     }
 
@@ -54,6 +58,7 @@ class UpdateProductRequest extends FormRequest
                 Rule::unique('products', 'barcode')->ignore($productId)->whereNull('deleted_at'),
             ],
             'price' => ['nullable', 'numeric', 'min:0'],
+            'loyaltyPrice' => ['nullable', 'numeric', 'min:0'],
             'costPrice' => ['nullable', 'numeric', 'min:0'],
             'taxClassData' => ['nullable', 'array'],
             'isActive' => ['nullable', 'boolean'],

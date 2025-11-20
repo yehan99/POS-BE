@@ -31,6 +31,7 @@ class ProductResource extends JsonResource
             'brand' => $this->brand,
             'barcode' => $this->barcode,
             'price' => (float) $this->price,
+            'loyaltyPrice' => (float) ($this->loyalty_price ?? $this->price),
             'costPrice' => (float) $this->cost_price,
             'taxClass' => $this->tax_class,
             'isActive' => $this->is_active,

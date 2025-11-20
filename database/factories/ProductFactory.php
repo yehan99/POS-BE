@@ -17,6 +17,7 @@ class ProductFactory extends Factory
     {
         $name = ucfirst($this->faker->unique()->words(3, true));
         $price = $this->faker->randomFloat(2, 5, 500);
+        $loyaltyPrice = round($price * $this->faker->randomFloat(2, 0.7, 0.98), 2);
         $costPrice = $this->faker->randomFloat(2, max(1, $price * 0.4), max($price * 0.8, 1));
         $trackInventory = $this->faker->boolean(80);
         $stockQuantity = $trackInventory ? $this->faker->numberBetween(0, 250) : 0;
@@ -93,6 +94,7 @@ class ProductFactory extends Factory
             'brand' => $this->faker->optional(0.5)->company(),
             'barcode' => $barcode,
             'price' => $price,
+            'loyalty_price' => $loyaltyPrice,
             'cost_price' => $costPrice,
             'tax_class' => $this->faker->randomElement($taxClasses),
             'is_active' => $this->faker->boolean(90),

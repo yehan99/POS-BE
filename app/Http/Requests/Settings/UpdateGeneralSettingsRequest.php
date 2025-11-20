@@ -26,6 +26,7 @@ class UpdateGeneralSettingsRequest extends FormRequest
             'locale' => $this->input('locale'),
             'invoicePrefix' => $this->sanitizeInvoicePrefix(),
             'invoiceStartNumber' => $this->input('invoiceStartNumber', $this->input('invoice_start_number')),
+            'taxRate' => $this->normalizeTaxRate(),
             'defaultSiteId' => $this->normalizeNullableString('defaultSiteId', 'default_site_id'),
         ]);
     }
@@ -52,6 +53,7 @@ class UpdateGeneralSettingsRequest extends FormRequest
             'locale' => ['required', 'string', 'max:12'],
             'invoicePrefix' => ['required', 'string', 'max:6'],
             'invoiceStartNumber' => ['required', 'integer', 'min:1', 'max:999999'],
+            'taxRate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'defaultSiteId' => ['nullable', 'string', $siteRule],
         ];
     }
@@ -89,5 +91,16 @@ class UpdateGeneralSettingsRequest extends FormRequest
         }
 
         return Str::upper(trim((string) $value));
+    }
+
+    private function normalizeTaxRate(): ?float
+    {
+        $value = $this->input('taxRate', $this->input('tax_rate'));
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return round((float) $value, 2);
     }
 }
