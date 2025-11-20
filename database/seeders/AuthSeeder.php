@@ -23,6 +23,7 @@ class AuthSeeder extends Seeder
             $permissions = $this->seedPermissions();
             $roles = $this->seedRoles($permissions);
             $this->seedSuperAdmin($roles['super_admin']);
+            $this->promoteRequestedSuperAdmins($roles['super_admin']);
         });
     }
 
@@ -224,5 +225,44 @@ class AuthSeeder extends Seeder
         if ($user->trashed()) {
             $user->restore();
         }
+    }
+
+    private function promoteRequestedSuperAdmins(Role $superAdminRole): void
+    {
+        $tenantId = Tenant::query()->value('id');
+
+        if (! $tenantId) {
+            return;
+        }
+
+        $this->promoteUserToSuperAdmin($superAdminRole, $tenantId, '1yehankalhara@gmail.com', [
+            'first_name' => 'Yehan',
+            'last_name' => 'Kalhara',
+            'phone' => '+94 77 765 1234',
+        ]);
+    }
+
+    private function promoteUserToSuperAdmin(Role $superAdminRole, string $tenantId, string $email, array $defaults = []): void
+    {
+        $user = User::withTrashed()->firstOrNew(['email' => $email]);
+
+        $user->tenant_id = $user->tenant_id ?? $tenantId;
+        $user->first_name = $user->first_name ?: Arr::get($defaults, 'first_name', 'Super');
+        $user->last_name = $user->last_name ?: Arr::get($defaults, 'last_name', 'Admin');
+        $user->phone = $user->phone ?: Arr::get($defaults, 'phone');
+        $user->password = $user->password ?: Hash::make('Password@123');
+        $user->is_active = true;
+        $user->email_verified_at = $user->email_verified_at ?? now();
+        $user->role()->associate($superAdminRole);
+        $user->metadata = array_merge($user->metadata ?? [], [
+            'granted_role' => 'super_admin',
+            'granted_by' => 'database:seed',
+        ]);
+
+        if ($user->trashed()) {
+            $user->restore();
+        }
+
+        $user->save();
     }
 }
