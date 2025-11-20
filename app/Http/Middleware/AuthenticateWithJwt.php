@@ -10,11 +10,14 @@ use Firebase\JWT\Key;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
 use RuntimeException;
 use Throwable;
 
 class AuthenticateWithJwt
 {
+    private const LAST_USED_UPDATE_INTERVAL = 60; // seconds
+
     public function handle(Request $request, Closure $next)
     {
         $rawToken = $this->extractTokenFromRequest($request);
@@ -35,6 +38,15 @@ class AuthenticateWithJwt
             throw new AuthenticationException('Token has expired.');
         }
 
+        $now = now();
+        $idleTimeout = (int) config('jwt.idle_timeout', 0);
+
+        if ($idleTimeout > 0 && $tokenRecord->last_used_at && $tokenRecord->last_used_at->diffInSeconds($now) >= $idleTimeout) {
+            $this->expireToken($tokenRecord, $now);
+
+            throw new AuthenticationException('Session expired due to inactivity.');
+        }
+
         $user = $tokenRecord->user;
 
         if (! $user || ! $user->is_active) {
@@ -48,8 +60,11 @@ class AuthenticateWithJwt
         $request->attributes->set('jwt_payload', $payload);
         $request->attributes->set('auth_token', $tokenRecord);
 
-        if ($tokenRecord->last_used_at?->diffInMinutes(now()) >= 5 || $tokenRecord->last_used_at === null) {
-            $tokenRecord->forceFill(['last_used_at' => now()])->save();
+        if (
+            $tokenRecord->last_used_at === null
+            || $tokenRecord->last_used_at->diffInSeconds($now) >= self::LAST_USED_UPDATE_INTERVAL
+        ) {
+            $tokenRecord->forceFill(['last_used_at' => $now])->save();
         }
 
         return $next($request);
@@ -87,5 +102,14 @@ class AuthenticateWithJwt
         }
 
         return $decoded;
+    }
+
+    private function expireToken(AuthToken $token, Carbon $timestamp): void
+    {
+        $token->forceFill([
+            'revoked' => true,
+            'access_token_expires_at' => $timestamp,
+            'refresh_token_expires_at' => $timestamp,
+        ])->save();
     }
 }

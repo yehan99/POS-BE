@@ -38,6 +38,7 @@ Route::prefix('auth')->name('auth.')->group(function () {
 
     Route::middleware('auth.jwt')->group(function () {
         Route::get('me', [AuthController::class, 'me'])->name('me');
+        Route::post('keep-alive', [AuthController::class, 'keepAlive'])->name('keep-alive');
         Route::post('logout', [AuthController::class, 'logout'])->name('logout');
     });
 });

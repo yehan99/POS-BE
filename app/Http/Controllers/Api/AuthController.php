@@ -119,6 +119,29 @@ class AuthController extends Controller
         ]);
     }
 
+    public function keepAlive(Request $request): JsonResponse
+    {
+        /** @var AuthToken|null $currentToken */
+        $currentToken = $request->attributes->get('auth_token');
+
+        if (! $currentToken) {
+            throw new AuthenticationException('Token context missing.');
+        }
+
+        $now = now();
+
+        $currentToken->forceFill(['last_used_at' => $now])->save();
+
+        return response()->json([
+            'ok' => true,
+            'tokenId' => $currentToken->access_token_id,
+            'expiresIn' => max(0, $currentToken->access_token_expires_at?->diffInSeconds($now) ?? 0),
+            'idleTimeoutSeconds' => (int) config('jwt.idle_timeout', 1_800),
+            'warningSeconds' => (int) config('jwt.idle_warning', 60),
+            'serverTime' => $now->toIso8601String(),
+        ]);
+    }
+
     private function tokenResponse(User $user, array $bundle, int $status = 200, bool $includeUser = true): JsonResponse
     {
         $response = [
